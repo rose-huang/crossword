@@ -1,7 +1,11 @@
 {-
 stack ghc -- --make -Wall -O crosswordSolver.hs
 ./crosswordSolver test_dict.txt test_sites.txt
+./crosswordSolver words.txt test_sites.txt
 
+stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
+./crosswordSolver words.txt test_sites.txt +RTS -ls -N2
+../threadscope.osx crosswordSolver.eventlog
 -}
 
 import qualified Data.Map.Strict as Map
@@ -13,6 +17,7 @@ import Control.Monad
 import Data.Ord (comparing)
 import Data.Function (on)
 import qualified Data.Matrix as Matrix
+import Data.Char(isAlpha, toLower)
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -49,7 +54,7 @@ solve cw = Map.fromList $ (concatMap makeSqChar) solution
     where solution = head $ solve' (wdict cw) (sites cw)
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
-solve' _     []     = [[]]
+solve' _ []     = [[]]
 solve' dict (s:ss) = if possWords == []
                         then error ("No words of length " ++ show (len s))
                         else do try <- possWords
@@ -74,7 +79,8 @@ main = do
       dictContents <- readFile dictFile
       siteContents <- readFile siteFile
       let dimensions:siteStrings = lines siteContents
-          solution = solve $ Crossword (toDict (lines dictContents)) (toSites siteStrings)
+          processedWords = map (map toLower . filter isAlpha) (lines dictContents)
+          solution = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do 
             putStrLn $ toMatrix rows cols solution
