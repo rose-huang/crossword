@@ -1,6 +1,6 @@
 {-
 stack ghc -- --make -Wall -O crosswordSolver.hs
-./crosswordSolver test_sites.txt
+./crosswordSolver test_dict.txt test_sites.txt
 
 -}
 
@@ -25,33 +25,21 @@ toSites s = map (\x -> Site {squares = map (\y -> read y::(Int, Int))
 
 
 toDict :: [String] -> Map.Map Int [String]
-toDict dictWords = Map.fromListWithKey (\_ x y -> x++y) $ map (\w -> (length w, [w])) dictWords
-
-
--- reads dict and sites file, construct Crossword, solve
-main :: IO ()
-main = do 
-  args <- getArgs
-  case args of 
-    [dictFile, siteFile] -> do
-      dictContents <- readFile dictFile
-      siteContents <- readFile siteFile
-      putStrLn $ show $ solve $ Crossword (toDict (lines dictContents)) (toSites (lines siteContents))
-
-    _ -> do die $ "error"
+toDict dictWords = Map.fromListWithKey (\_ x y -> x++y) 
+  $ map (\w -> (length w, [w])) dictWords
 
 
 -- test whether there exist no two different letters on the same squares
 verifySquares :: [(String, Site)] -> Bool
-verifySquares xs = all allEqual groupedByCoordXs
-    where groupedByCoordXs = groupedByCoord xs
+verifySquares xs = all allEqual groupedBySquareXs
+    where groupedBySquareXs = groupedBySquare xs
           allEqual []     = True
           allEqual (x:xss) = all (x==) xss
 
 
--- make into list of lists of chars, grouped by coordinates
-groupedByCoord :: [(String, Site)] -> [[Char]]
-groupedByCoord xs = map (map snd) . List.groupBy ((==) `on` fst) . List.sortBy (comparing fst) 
+-- make into list of lists of chars, grouped by squares
+groupedBySquare :: [(String, Site)] -> [[Char]]
+groupedBySquare xs = map (map snd) . List.groupBy ((==) `on` fst) . List.sortBy (comparing fst) 
                         . concatMap makeSqChar $ xs
 
 
@@ -75,3 +63,15 @@ solve' dict (s:ss) = if possWords == []
                                 Control.Monad.guard $ verifySquares attempt
                                 return attempt
     where possWords = Map.findWithDefault [] (len s) dict
+
+-- reads dict and sites file, construct Crossword, solve
+main :: IO ()
+main = do 
+  args <- getArgs
+  case args of 
+    [dictFile, siteFile] -> do
+      dictContents <- readFile dictFile
+      siteContents <- readFile siteFile
+      putStrLn $ show $ solve $ Crossword (toDict (lines dictContents)) (toSites (lines siteContents))
+
+    _ -> do die $ "error"
