@@ -67,7 +67,7 @@ solve cw = map (concatMap makeSqChar) solution
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _     []     = [[]]
-solve' dict (s:ss) = if null possWords
+solve' dict (s:ss) = if possWords == []
                         then error ("No words of length " ++ show (len s))
                         else do try <- possWords
                                 solveAgain <- solve' dict ss
