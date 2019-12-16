@@ -72,7 +72,6 @@ main = do
       dictContents <- readFile dictFile
       let processedWords = map (map toLower . filter isAlpha) (lines $ dictContents)
       siteContents <- readFile siteFile
-      -- putStrLn $ show (length processedWords)
       putStrLn $ show $ solve $ Crossword (toDict processedWords) (toSites (lines siteContents))
 
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
