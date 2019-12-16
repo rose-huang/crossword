@@ -9,7 +9,6 @@ import qualified Data.List as List
 import System.IO(readFile)
 import System.Environment(getArgs)
 import System.Exit(die)
-
 import Control.Monad
 import Data.Ord (comparing)
 import Data.Function (on)
@@ -18,35 +17,30 @@ type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
 data Crossword = Crossword {wdict :: Map.Map Int [String], sites :: [Site]}  deriving (Show,Eq)
 
-
+-- convert list of strings from site file to list of sites
 toSites :: [String] -> [Site]
 toSites s = map (\x -> Site {squares = map (\y -> read y::(Int, Int)) 
-  $ words x, len = length $ words x}) s
+            $ words x, len = length $ words x}) s
 
-
+-- convert list of strings from dict file to map with length as key and list of words as value
 toDict :: [String] -> Map.Map Int [String]
 toDict dictWords = Map.fromListWithKey (\_ x y -> x++y) 
-  $ map (\w -> (length w, [w])) dictWords
+                   $ map (\w -> (length w, [w])) dictWords
 
-
--- test whether there exist no two different letters on the same squares
+-- test to ensure there are no two different letters on the same squares
 verifySquares :: [(String, Site)] -> Bool
-verifySquares xs = all allEqual groupedBySquareXs
-    where groupedBySquareXs = groupedBySquare xs
-          allEqual []     = True
+verifySquares xs = all allEqual $ groupBySquare xs
+    where allEqual []     = True
           allEqual (x:xss) = all (x==) xss
 
-
 -- make into list of lists of chars, grouped by squares
-groupedBySquare :: [(String, Site)] -> [[Char]]
-groupedBySquare xs = map (map snd) . List.groupBy ((==) `on` fst) . List.sortBy (comparing fst) 
-                        . concatMap makeSqChar $ xs
-
+groupBySquare :: [(String, Site)] -> [[Char]]
+groupBySquare xs = map (map snd) $ List.groupBy ((==) `on` fst) $ List.sortBy (comparing fst) 
+                   $ concatMap makeSqChar $ xs
 
 -- assign each character to a square
 makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
-
 
 -- return solution of crossword as a list of squares and letters
 solve :: Crossword -> [[(Square, Char)]]
@@ -74,4 +68,4 @@ main = do
       siteContents <- readFile siteFile
       putStrLn $ show $ solve $ Crossword (toDict (lines dictContents)) (toSites (lines siteContents))
 
-    _ -> do die $ "error"
+    _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
