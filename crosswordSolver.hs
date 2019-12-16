@@ -1,7 +1,11 @@
 {-
 stack ghc -- --make -Wall -O crosswordSolver.hs
 ./crosswordSolver test_dict.txt test_sites.txt
+./crosswordSolver words.txt test_sites.txt
 
+stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
+./crosswordSolver words.txt test_sites.txt +RTS -ls -N2
+../threadscope.osx crosswordSolver.eventlog
 -}
 
 import qualified Data.Map.Strict as Map
@@ -12,6 +16,7 @@ import System.Exit(die)
 import Control.Monad
 import Data.Ord (comparing)
 import Data.Function (on)
+import Data.Char(isAlpha, toLower)
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -43,12 +48,12 @@ makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
 
 -- return solution of crossword as a list of squares and letters
-solve :: Crossword -> [[(Square, Char)]]
-solve cw = map (concatMap makeSqChar) solution
-    where solution = solve' (wdict cw) (sites cw)
+solve :: Crossword -> [(Square, Char)]
+solve cw = concatMap makeSqChar solution
+    where solution = head $ solve' (wdict cw) (sites cw)
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
-solve' _     []     = [[]]
+solve' _ []     = [[]]
 solve' dict (s:ss) = if possWords == []
                         then error ("No words of length " ++ show (len s))
                         else do try <- possWords
@@ -65,7 +70,9 @@ main = do
   case args of 
     [dictFile, siteFile] -> do
       dictContents <- readFile dictFile
+      let processedWords = map (map toLower . filter isAlpha) (lines $ dictContents)
       siteContents <- readFile siteFile
-      putStrLn $ show $ solve $ Crossword (toDict (lines dictContents)) (toSites (lines siteContents))
+      -- putStrLn $ show (length processedWords)
+      putStrLn $ show $ solve $ Crossword (toDict processedWords) (toSites (lines siteContents))
 
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
