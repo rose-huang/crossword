@@ -12,6 +12,7 @@ import System.Exit(die)
 import Control.Monad
 import Data.Ord (comparing)
 import Data.Function (on)
+import qualified Data.Matrix as Matrix
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -43,9 +44,9 @@ makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
 
 -- return solution of crossword as a list of squares and letters
-solve :: Crossword -> [[(Square, Char)]]
-solve cw = map (concatMap makeSqChar) solution
-    where solution = solve' (wdict cw) (sites cw)
+solve :: Crossword -> Map.Map Square Char
+solve cw = Map.fromList $ (concatMap makeSqChar) solution
+    where solution = head $ solve' (wdict cw) (sites cw)
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _     []     = [[]]
@@ -58,6 +59,12 @@ solve' dict (s:ss) = if possWords == []
                                 return attempt
     where possWords = Map.findWithDefault [] (len s) dict
 
+toMatrix :: Int -> Int -> Map.Map Square Char -> String
+toMatrix rows cols solution = Matrix.prettyMatrix $ Matrix.matrix rows cols getLetter where 
+    getLetter (i,j) = case Map.lookup (i,j) solution of
+        Nothing -> ' '
+        Just c -> c
+
 -- reads dict and sites file, construct Crossword, solve
 main :: IO ()
 main = do 
@@ -66,6 +73,10 @@ main = do
     [dictFile, siteFile] -> do
       dictContents <- readFile dictFile
       siteContents <- readFile siteFile
-      putStrLn $ show $ solve $ Crossword (toDict (lines dictContents)) (toSites (lines siteContents))
-
+      let dimensions:siteStrings = lines siteContents
+          solution = solve $ Crossword (toDict (lines dictContents)) (toSites siteStrings)
+      case (map (\x -> read x :: Int) $ words dimensions) of
+        [rows, cols] -> do 
+            putStrLn $ toMatrix rows cols solution
+        _ -> do die $ "siteFile doesn't include dimensions"
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
