@@ -19,7 +19,8 @@ import Data.Ord (comparing)
 import Data.Function (on)
 import Data.Char(isAlpha, toLower)
 import Control.Monad
-import Control.Parallel.Strategies(Strategy, rpar, using)
+import Control.Parallel.Strategies hiding (parMap)
+-- import Control.Parallel.Strategies(Strategy, rpar, using, parList, rseq, runEval)
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -57,6 +58,14 @@ parPair (a, b) = do
     b' <- rpar b
     return (a', b')
 
+
+parMap :: (a -> b) -> [a] -> Eval [b]
+parMap _ []     = return []
+parMap f (a:as) = do 
+    b <- rpar (f a)
+    bs <- parMap f as
+    return (b:bs)
+
 -- return solution of crossword as a list of squares and letters
 solve :: Crossword -> Map.Map Square Char
 solve cw = Map.fromList $ (concatMap makeSqChar) solution
@@ -67,15 +76,12 @@ solve' _ []     = [[]]
 solve' dict (s:ss) = if possWords == []
                         then error ("No words of length " ++ show (len s))
                         else do
-                            let splitWords = splitAt (length possWords `div` 2) possWords
-                            let (a, b) = (trySolve (fst splitWords), trySolve (snd splitWords)) `using` parPair
-                            a ++ b
+                            solveAgain <- solve' dict ss
+                            filter verifySquares (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rpar)   
     where possWords = Map.findWithDefault [] (len s) dict
+          trySolve :: String -> [(String, Site)]
           trySolve thiswords = do
-                try <- thiswords
-                solveAgain <- solve' dict ss
-                let attempt = (try, s) : solveAgain
-                Control.Monad.guard $ verifySquares attempt
+                let attempt = (thiswords, s) 
                 return attempt
 
 toMatrix :: Int -> Int -> Map.Map Square Char -> String
@@ -92,10 +98,10 @@ main = do
     [dictFile, siteFile] -> do
       dictContents <- readFile dictFile
       siteContents <- readFile siteFile
-
       let dimensions:siteStrings = lines siteContents
           processedWords = map (map toLower . filter isAlpha) (lines dictContents)
           solution = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
+      putStrLn $ show solution
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do 
             putStrLn $ toMatrix rows cols solution
