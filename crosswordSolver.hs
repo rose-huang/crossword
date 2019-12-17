@@ -1,11 +1,11 @@
 {-
 stack ghc -- --make -Wall -O crosswordSolver.hs
 ./crosswordSolver test_dict.txt test_sites.txt
-./crosswordSolver words.txt test_sites.txt
+./crosswordSolver words44.txt test_sites.txt
 
 stack build
 stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
-./crosswordSolver words.txt test_sites.txt +RTS -ls -N2
+./crosswordSolver words44.txt test_sites.txt +RTS -ls -N2
 ../threadscope.osx crosswordSolver.eventlog
 -}
 
@@ -18,9 +18,7 @@ import System.Exit(die)
 import Data.Ord (comparing)
 import Data.Function (on)
 import Data.Char(isAlpha, toLower)
-import Control.Monad
-import Control.Parallel.Strategies hiding (parMap)
--- import Control.Parallel.Strategies(Strategy, rpar, using, parList, rseq, runEval)
+import Control.Parallel.Strategies
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -51,21 +49,6 @@ groupBySquare xs = map (map snd) $ List.groupBy ((==) `on` fst) $ List.sortBy (c
 makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
 
--- parallel evaluation in pairs
-parPair :: Strategy (a, b)
-parPair (a, b) = do
-    a' <- rpar a
-    b' <- rpar b
-    return (a', b')
-
-
-parMap :: (a -> b) -> [a] -> Eval [b]
-parMap _ []     = return []
-parMap f (a:as) = do 
-    b <- rpar (f a)
-    bs <- parMap f as
-    return (b:bs)
-
 -- return solution of crossword as a list of squares and letters
 solve :: Crossword -> Map.Map Square Char
 solve cw = Map.fromList $ (concatMap makeSqChar) solution
@@ -73,17 +56,20 @@ solve cw = Map.fromList $ (concatMap makeSqChar) solution
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _ []     = [[]]
-solve' dict (s:ss) = if possWords == []
-                        then error ("No words of length " ++ show (len s))
-                        else do
-                            solveAgain <- solve' dict ss
-                            filter verifySquares (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rpar)   
+solve' dict (s:ss) = 
+    if possWords == []
+    then error ("No words of length " ++ show (len s))
+    else do
+        solveAgain <- solve' dict ss
+        filter verifySquares 
+          (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rpar)   
     where possWords = Map.findWithDefault [] (len s) dict
           trySolve :: String -> [(String, Site)]
           trySolve thiswords = do
                 let attempt = (thiswords, s) 
                 return attempt
 
+-- return solution as prettyMatrix String
 toMatrix :: Int -> Int -> Map.Map Square Char -> String
 toMatrix rows cols solution = Matrix.prettyMatrix $ Matrix.matrix rows cols getLetter where 
     getLetter (i,j) = case Map.lookup (i,j) solution of
@@ -101,7 +87,6 @@ main = do
       let dimensions:siteStrings = lines siteContents
           processedWords = map (map toLower . filter isAlpha) (lines dictContents)
           solution = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
-      putStrLn $ show solution
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do 
             putStrLn $ toMatrix rows cols solution
