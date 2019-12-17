@@ -52,7 +52,7 @@ makeSqChar (str,s) = zip (squares s) str
 -- return solution of crossword as a list of squares and letters
 solve :: Crossword -> [Map.Map Square Char]
 solve cw = map (Map.fromList . (concatMap makeSqChar)) solutions
-    where solutions = solve' (wdict cw) (sites cw)
+    where solutions = List.nub $ solve' (wdict cw) (sites cw)
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _ []     = [[]]
@@ -62,12 +62,11 @@ solve' dict (s:ss) =
     else do
         solveAgain <- solve' dict ss
         filter verifySquares 
-          (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rpar)   
+          (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rseq)
     where possWords = Map.findWithDefault [] (len s) dict
           trySolve :: String -> [(String, Site)]
-          trySolve thiswords = do
-                let attempt = (thiswords, s) 
-                return attempt
+          trySolve thisword = do
+                return (thisword, s)
 
 -- return solution as prettyMatrix String
 toMatrix :: Int -> Int -> Map.Map Square Char -> String
@@ -87,8 +86,10 @@ main = do
       let dimensions:siteStrings = lines siteContents
           processedWords = map (map toLower . filter isAlpha) (lines dictContents)
           solutions = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
+          originalBoard = Map.fromList $ zip (concatMap squares (toSites siteStrings)) (repeat 'x')
       case (map (\x -> read x :: Int) $ words dimensions) of
-        [rows, cols] -> do 
+        [rows, cols] -> do
+            putStrLn $ toMatrix rows cols originalBoard
             mapM_ putStrLn $ map (toMatrix rows cols) solutions
         _ -> do die $ "siteFile doesn't include dimensions"
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
