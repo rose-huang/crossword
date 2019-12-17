@@ -50,9 +50,9 @@ makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
 
 -- return solution of crossword as a list of squares and letters
-solve :: Crossword -> Map.Map Square Char
-solve cw = Map.fromList $ (concatMap makeSqChar) solution
-    where solution = head $ solve' (wdict cw) (sites cw)
+solve :: Crossword -> [Map.Map Square Char]
+solve cw = map (Map.fromList . (concatMap makeSqChar)) solutions
+    where solutions = solve' (wdict cw) (sites cw)
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _ []     = [[]]
@@ -86,9 +86,9 @@ main = do
       siteContents <- readFile siteFile
       let dimensions:siteStrings = lines siteContents
           processedWords = map (map toLower . filter isAlpha) (lines dictContents)
-          solution = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
+          solutions = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do 
-            putStrLn $ toMatrix rows cols solution
+            mapM_ putStrLn $ map (toMatrix rows cols) solutions
         _ -> do die $ "siteFile doesn't include dimensions"
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
