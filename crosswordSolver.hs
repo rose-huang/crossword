@@ -3,6 +3,7 @@ stack ghc -- --make -Wall -O crosswordSolver.hs
 ./crosswordSolver test_dict.txt test_sites.txt
 ./crosswordSolver words.txt test_sites.txt
 
+stack build
 stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
 ./crosswordSolver words.txt test_sites.txt +RTS -ls -N2
 ../threadscope.osx crosswordSolver.eventlog
@@ -10,14 +11,15 @@ stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
 
 import qualified Data.Map.Strict as Map
 import qualified Data.List as List
+import qualified Data.Matrix as Matrix
 import System.IO(readFile)
 import System.Environment(getArgs)
 import System.Exit(die)
-import Control.Monad
 import Data.Ord (comparing)
 import Data.Function (on)
-import qualified Data.Matrix as Matrix
 import Data.Char(isAlpha, toLower)
+import Control.Monad
+import Control.Parallel(par, pseq)
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)

@@ -1,0 +1,24 @@
+/Users/biqing/Desktop/pfp_final/crossword/parallel-3.2.2.0/changelog.md:
+  hash: c397aeaa6614eb5dc89d203956160d53ed3c9dcf64cc7982d07e7930d1b3c098
+  size: 1219
+  modtime: 1531499573
+/Users/biqing/Desktop/pfp_final/crossword/parallel-3.2.2.0/Control/Seq.hs:
+  hash: 8ee1bbea9c149d8949273fc9a85cc40a2585f5140ff45b7e645a00fa48940245
+  size: 8186
+  modtime: 1531499573
+/Users/biqing/Desktop/pfp_final/crossword/parallel-3.2.2.0/Control/Parallel/Strategies.hs:
+  hash: fb7b948b14f1bd737ceeb758323fad5b25b785a3722a2d3ea28cf35bc757b388
+  size: 37333
+  modtime: 1531499573
+/Users/biqing/Desktop/pfp_final/crossword/parallel-3.2.2.0/Control/Parallel.hs:
+  hash: b1e539abd509ea93992cf8becfc257ae1643a2a630b3b3b663ebec1992978583
+  size: 2422
+  modtime: 1531499573
+/Users/biqing/Desktop/pfp_final/crossword/parallel-3.2.2.0/parallel.cabal:
+  hash: 83e6886134615ce146c47615fac30e131dbb21ee0a1650c75f81d6de1c41593b
+  size: 1720
+  modtime: 1531499573
+/Users/biqing/.stack/programs/x86_64-osx/ghc-8.6.5/lib/ghc-8.6.5/include/ghcversion.h:
+  hash: ca33eca9a5d6d6c3a4138d1ebf5808e19d48d89df6929099f6aaebd64ffe7843
+  size: 524
+  modtime: 1567636541

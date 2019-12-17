@@ -1,0 +1,4 @@
+Dictionary: words1.txt consists of the answers, 30 most common medium-length English words
+and 30 most common short-length English words, with reference to:
+https://github.com/first20hours/google-10000-english
+
