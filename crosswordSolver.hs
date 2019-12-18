@@ -86,12 +86,12 @@ main = do
       let dimensions:siteStrings = lines siteContents
           processedWords = map (map toLower . filter isAlpha) (lines dictContents)
           solutions = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
-          originalBoard = Map.fromList $ zip (concatMap squares (toSites siteStrings)) (repeat '_')
+          originalBoard = Map.fromList $ zip (concatMap squares (toSites siteStrings)) (repeat 'X')
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do
-            putStrLn "original board"
+            putStrLn "original board:"
             putStrLn $ toMatrix rows cols originalBoard
-            putStrLn "solutions"
+            putStrLn "solutions:"
             mapM_ putStrLn $ map (toMatrix rows cols) solutions
         _ -> do die $ "siteFile doesn't include dimensions"
     _ -> do die $ "Usage: ./crosswordSolver <dict file> <site file>"
