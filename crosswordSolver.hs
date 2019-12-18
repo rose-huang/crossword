@@ -1,8 +1,6 @@
 {-
-stack build
-stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
-./crosswordSolver words44.txt test_sites.txt +RTS -ls -N2
-../threadscope.osx crosswordSolver.eventlog
+PFP Final Project
+Names: Rose Huang (rh2805) and Biqing Qiu (bq2134)
 -}
 
 import qualified Data.Map.Strict as Map
@@ -19,14 +17,17 @@ import Control.Monad
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
-data Crossword = Crossword {wdict :: Map.Map Int [String], sites :: [Site]}  deriving (Show,Eq)
+data Crossword = 
+  Crossword {wdict :: Map.Map Int [String], sites :: [Site]} 
+  deriving (Show,Eq)
 
 -- convert list of strings from site file to list of sites
 toSites :: [String] -> [Site]
 toSites s = map (\x -> Site {squares = map (\y -> read y::(Int, Int)) 
             $ words x, len = length $ words x}) s
 
--- convert list of strings from dict file to map with length as key and list of words as value
+-- convert list of strings from dict file to map with length as key and list
+-- of words as value
 toDict :: [String] -> Map.Map Int [String]
 toDict dictWords = Map.fromListWithKey (\_ x y -> x++y) 
                    $ map (\w -> (length w, [w])) dictWords
@@ -39,7 +40,9 @@ verifySquares xs = all allEqual $ groupBySquare xs
 
 -- make into list of lists of chars, grouped by squares
 groupBySquare :: [(String, Site)] -> [[Char]]
-groupBySquare xs = map (map snd) $ List.groupBy ((==) `on` fst) $ List.sortBy (comparing fst) 
+groupBySquare xs = map (map snd) 
+                   $ List.groupBy ((==) `on` fst) 
+                   $ List.sortBy (comparing fst) 
                    $ concatMap makeSqChar $ xs
 
 -- assign each character to a square
@@ -63,9 +66,9 @@ solve' _ []     = [[]]
 solve' dict (s:ss) = if possWords == []
                         then error ("No words of length " ++ show (len s))
                         else do
-                            let splitWords = splitAt (length possWords `div` 2) possWords
-                            let (a, b) = (trySolve (fst splitWords), trySolve (snd splitWords)) `using` parPair
-                            a ++ b
+                            let (a, b) = splitAt (length possWords `div` 2) possWords
+                                (aa, bb) = (trySolve a, trySolve b) `using` parPair
+                            aa ++ bb
     where possWords = Map.findWithDefault [] (len s) dict
           trySolve thiswords = do
                 try <- thiswords
@@ -76,7 +79,8 @@ solve' dict (s:ss) = if possWords == []
 
 -- return solution as prettyMatrix String
 toMatrix :: Int -> Int -> Map.Map Square Char -> String
-toMatrix rows cols solution = Matrix.prettyMatrix $ Matrix.matrix rows cols getLetter where 
+toMatrix rows cols solution = Matrix.prettyMatrix 
+    $ Matrix.matrix rows cols getLetter where 
     getLetter (i,j) = case Map.lookup (i,j) solution of
         Nothing -> ' '
         Just c -> c
@@ -90,9 +94,12 @@ main = do
       dictContents <- readFile dictFile
       siteContents <- readFile siteFile
       let dimensions:siteStrings = lines siteContents
-          processedWords = map (map toLower . filter isAlpha) (lines dictContents)
-          solutions = solve $ Crossword (toDict processedWords) (toSites (siteStrings))
-          originalBoard = Map.fromList $ zip (concatMap squares (toSites siteStrings)) (repeat 'X')
+          processedWords = 
+            map (map toLower . filter isAlpha) (lines dictContents)
+          solutions = solve 
+            $ Crossword (toDict processedWords) (toSites (siteStrings))
+          originalBoard = Map.fromList 
+            $ zip (concatMap squares (toSites siteStrings)) (repeat 'X')
       case (map (\x -> read x :: Int) $ words dimensions) of
         [rows, cols] -> do
             putStrLn "original board:"
