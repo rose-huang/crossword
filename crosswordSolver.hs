@@ -18,7 +18,8 @@ import System.Exit(die)
 import Data.Ord (comparing)
 import Data.Function (on)
 import Data.Char(isAlpha, toLower)
-import Control.Parallel.Strategies
+import Control.Parallel.Strategies hiding (parPair)
+import Control.Monad
 
 type Square    = (Int, Int)
 data Site      = Site {squares :: [Square], len :: Int} deriving (Show,Eq)
@@ -49,6 +50,13 @@ groupBySquare xs = map (map snd) $ List.groupBy ((==) `on` fst) $ List.sortBy (c
 makeSqChar :: (String, Site) -> [(Square, Char)]
 makeSqChar (str,s) = zip (squares s) str
 
+-- parallel evaluation in pairs
+parPair :: Strategy (a, b)
+parPair (a, b) = do
+    a' <- rpar a
+    b' <- rpar b
+    return (a', b')
+
 -- return solution of crossword as a list of squares and letters
 solve :: Crossword -> [Map.Map Square Char]
 solve cw = map (Map.fromList . (concatMap makeSqChar)) solutions
@@ -56,17 +64,19 @@ solve cw = map (Map.fromList . (concatMap makeSqChar)) solutions
 
 solve' :: Map.Map Int [String] -> [Site] -> [[(String, Site)]]
 solve' _ []     = [[]]
-solve' dict (s:ss) = 
-    if possWords == []
-    then error ("No words of length " ++ show (len s))
-    else do
-        solveAgain <- solve' dict ss
-        filter verifySquares 
-          (map (\x -> trySolve x  ++ solveAgain) possWords `using` parList rseq)
+solve' dict (s:ss) = if possWords == []
+                        then error ("No words of length " ++ show (len s))
+                        else do
+                            let splitWords = splitAt (length possWords `div` 2) possWords
+                            let (a, b) = (trySolve (fst splitWords), trySolve (snd splitWords)) `using` parPair
+                            a ++ b
     where possWords = Map.findWithDefault [] (len s) dict
-          trySolve :: String -> [(String, Site)]
-          trySolve thisword = do
-                return (thisword, s)
+          trySolve thiswords = do
+                try <- thiswords
+                solveAgain <- solve' dict ss
+                let attempt = (try, s) : solveAgain
+                Control.Monad.guard $ verifySquares attempt
+                return attempt
 
 -- return solution as prettyMatrix String
 toMatrix :: Int -> Int -> Map.Map Square Char -> String
