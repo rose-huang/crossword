@@ -1,8 +1,4 @@
 {-
-stack ghc -- --make -Wall -O crosswordSolver.hs
-./crosswordSolver test_dict.txt test_sites.txt
-./crosswordSolver words44.txt test_sites.txt
-
 stack build
 stack ghc -- -O2 -threaded -eventlog -rtsopts --make -Wall -O crosswordSolver.hs
 ./crosswordSolver words44.txt test_sites.txt +RTS -ls -N2
